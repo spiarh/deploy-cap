@@ -1,0 +1,19 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: cap:clusterrole
+roleRef:
+  kind: ClusterRole
+  name: suse:cap:psp
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: uaa
+- kind: ServiceAccount
+  name: default
+  namespace: scf
+- kind: ServiceAccount
+  name: default
+  namespace: stratos

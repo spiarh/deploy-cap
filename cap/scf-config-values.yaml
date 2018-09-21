@@ -1,0 +1,41 @@
+env:
+    # Enter the domain you created for your cluster
+    DOMAIN: 10.84.154.101.xip.io
+    
+    # The fully-qualified domain name of your UAA host
+    # This is the external access to the cluster
+    UAA_HOST: uaa.10.84.154.101.xip.io
+    
+    # The default is 2793
+    UAA_PORT: 2793
+
+secrets:    
+    # Create a password for your UAA client secret
+    UAA_ADMIN_CLIENT_SECRET: d7c83726-837f-45a4-a946-fd2119e00afb
+
+    # Create a password for your SUSE Cloud Foundry cluster
+    CLUSTER_ADMIN_PASSWORD: d7c83726-837f-45a4-a946-fd2119e00afb
+
+kube:
+    # The external IP address of the Kubernetes cluster
+    external_ips: ["10.84.154.101"]
+    
+    # Your chosen storage class
+    storage_class:
+        persistent: "persistent"
+        shared: "shared"
+    
+    # The Docker registry the images will be fetched from
+    # This is the default
+    registry:
+       hostname: "registry.suse.com"
+       username: ""
+       password: ""
+    organization: "cap"
+
+    # Required for CaaSP 2
+    auth: rbac
+    
+    # example high availability configuration
+    # see Section 2.7, Example High Availability Configuration for 
+    # an example HA configuration

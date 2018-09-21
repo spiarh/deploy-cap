@@ -1,0 +1,43 @@
+sizing:
+  api:
+    count: 8
+  cc_uploader:
+    count: 3
+  cc_worker:
+    count: 6
+  cf_usb:
+    count: 3
+  consul:
+    count: 1
+  diego_access:
+    count: 3
+  diego_api:
+    count: 3
+  diego_brain:
+    count: 2
+  diego_cell:
+    count: 3
+  diego_locket:
+    count: 3
+  doppler:
+    count: 4
+  loggregator:
+    count: 8
+  mysql:
+    count: 3
+  nats:
+    count: 2
+  nfs_broker:
+    count: 3
+  postgres:
+    count: 3
+  router:
+    count: 8
+  routing_api:
+    count: 3
+  syslog_adapter:
+    count: 8
+  syslog_rlp:
+    count: 8
+  tcp_router:
+    count: 3

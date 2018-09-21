@@ -1,0 +1,514 @@
+#!/bin/bash
+
+set -euo pipefail
+
+DIR="$( cd "$( dirname "$0" )" && pwd )"
+
+# Options
+ACTION=""
+# Default mount path in containers
+MOUNT_PATH="/mnt"
+export HELM_HOME="$DIR/cap/.helm"
+## Default file path in automation
+ENVIRONMENT=${ENVIRONMENT:-$DIR/../../environment.json}
+ENVIRONMENT_SSH=${ENVIRONMENT_SSH:-$DIR/../../environment.ssh_config}
+KUBECONFIG=${KUBECONFIG:-$DIR/../../kubeconfig}
+DEPLOY=false
+
+# Create dir if it does not exist
+if [[ ! -d $HELM_HOME ]]; then
+  mkdir -p $HELM_HOME
+fi
+
+USAGE=$(cat <<USAGE
+Usage:
+
+# SUSE Cloud Application Platform (CAP)
+
+  * Deploy CAP
+
+    --deploy-cap                                  Deploy Cloud Application Platform
+
+  * Test CAP
+
+    --test-cap                                    Run tests on Cloud Application Platform
+
+  * Destroy CAP
+
+    --destroy-cap                                 Destroy the Cloud Application Platform deployment
+
+* General Options
+
+    -ds|--deploy-server                           Deploy the server part when used with --test-volumetype (see example 2)
+    -e|--environment     <FNAME>                  'environment.json' file path (\$ENVIRONMENT)
+    -k|--kubeconfig      <FNAME>                  'kubeconfig' file path (\$KUBECONFIG)
+    -sc|--ssh-config     <FNAME>                  'environment.ssh_config' file path (\$ENVIRONMENT_SSH)
+
+  * Examples:
+
+  $0 --deploy-cap -k kubeconfig -sc environment.ssh_config -e environment.json
+  $0 --test-cap -k kubeconfig -sc environment.ssh_config -e environment.json
+    # is the same as:
+  $0 --test-cap -ds -k kubeconfig -sc environment.ssh_config -e environment.json
+
+  $0 --destroy-cap -k kubeconfig -sc environment.ssh_config -e environment.json
+
+# Requirements:
+ - 'kubeconfig' file
+ - 'environment.json' file
+ - 'environment.ssh_config' file
+ - 'kubectl' executable in path
+ - 'helm' executable in path
+ - 'jq' executable in path
+ - 'cf' executable in path
+ 
+USAGE
+)
+
+# Utility methods
+log()        { (>&2 echo -e ">>> [cap-deploy] $@"); }
+log_info()   { log "INFO: $@"; }
+log_action() { log "ACTION: $@ ($(date '+%Y-%m-%d %H:%M:%S'))" 2>&1 |tee -a tests.log; }
+
+log_test_info()    { log "TEST_INFO: $@" 2>&1 |tee -a tests.log; }
+log_test_result()  {
+  if [ $1 == true ]; then
+    log "TEST_RESULT: SUCCESS" 2>&1 |tee -a tests.log
+  else
+    log "TEST_RESULT: FAILED" 2>&1 |tee -a tests.log
+  fi
+}
+
+check_result() {
+  if [ $1 -eq 0 ]; then
+    log_test_result true; return 0
+  else
+    log_test_result false; return 1
+  fi
+}
+
+log_warn()       { log "WARNING: $@" ; }
+log_error()      { log "ERROR: $@" ; exit 1 ; }
+check_file() { if [ ! -f $1 ]; then error "File $1 doesn't exist!"; fi }
+
+# Parse options
+while [[ $# > 0 ]] ; do
+  case $1 in
+    --deploy-cap)
+      ACTION="deploy-cap"
+      ;;
+    --destroy-cap)
+      ACTION="destroy-cap"
+      ;;
+    --test-cap)
+      ACTION="test-cap"
+      ;;
+    -k|--kubeconfig)
+      KUBECONFIG="$2"
+      shift
+      ;;
+    -e|--environment)
+      ENVIRONMENT="$2"
+      shift
+      ;;
+    -sc|--ssh-config)
+      ENVIRONMENT_SSH="$2"
+      shift
+      ;;
+    -ds|--deploy-server)
+      DEPLOY=true
+      ;;
+    -h|--help)
+      echo "$USAGE"
+      exit 0
+      ;;
+  esac
+  shift
+done
+
+# Common functions
+
+# Wait until a specific workload resource is ready
+wait_until_ready() {
+  # Requires $target_num $timeout
+  case $1 in
+    ds|daemonsets)
+      resource="daemonsets"
+      ready_column="4"
+      ;;
+    deploy|deployments)
+      resource="deployments"
+      ready_column="5"
+      ;;
+    rs|replicasets)
+      resource="replicasets"
+      ready_column="4"
+      ;;
+    sts|statefulsets)
+      resource="statefulsets"
+      ready_column="3"
+      ;;
+  esac
+
+  namespace=${2:-default}
+  timeout=${3:-600}
+  target_num=$( kget $resource $NAME -n $namespace | awk '{print $2}' )
+
+  for elapsed in $(seq 0 $timeout); do
+    log_info "[$elapsed / $timeout] checking $resource/$NAME in namespace $namespace"
+    current_available_num=$( kget $resource $NAME -n $namespace | awk "{print $"$ready_column"}" )
+    log_info "current: $current_available_num / $target_num"
+    [[ $current_available_num -eq "$target_num" ]] && log_info "ready" && return
+    log_info "not ready yet"
+    sleep 1
+  done
+  log_error "$current_available_num instances running. Expected: $target_num"
+  return 1
+}
+
+# Wait until all workload resources are ready in a namespace
+# It is a wrapper around wait_until_ready
+wait_until_all_ns_ready() {
+  resources="daemonsets deployments replicasets statefulsets"
+  namespace=${1:-default}
+  timeout=${2:-3200}
+
+  for resource in $resources; do
+    resources_found=$(kget $resource -n $namespace | awk '{print $1}')
+    if [[ $resources_found ]]; then
+      for rsc in $resources_found; do
+        NAME=$rsc && wait_until_ready $resource $namespace $timeout
+      done
+    fi
+  done
+}
+
+# Wait until a pod or a namespace id deleted
+wait_until_deleted() {
+  case $1 in
+    po|pods)
+      resource="pods"
+      status_column="3"
+      ;;
+    ns|namespaces)
+      resource="namespaces"
+      status_column="2"
+      ;;
+  esac
+  namespace=${2:-default}
+  timeout=${3:-600}
+
+  for elapsed in $(seq 0 $timeout); do
+    log_info "[$elapsed / $timeout] waiting for $resource $NAME to be deleted"
+    current_status=$( kget $resource -n $namespace --ignore-not-found=true | grep $NAME | awk "{print $"$status_column"}" ) && log_info "current status: $current_status"
+    [[ -z $current_status ]] && log_info "current status: deleted" && return
+    sleep 1
+  done
+  log_error "$resource $NAME is in the state $current_status. Expected to be null (deleted)"
+  return 1
+}
+
+apply_manifest() {
+  log_info "running: kubectl apply -f $@"
+  kubectl --kubeconfig="$KUBECONFIG" apply -f $@
+}
+
+delete_manifest() {
+  log_info "running: kubectl delete -f $@"
+  kubectl --kubeconfig="$KUBECONFIG" delete -f $@ --all=true
+}
+
+kdescribe() {
+  log_info "running: kubectl describe $@"
+  kubectl --kubeconfig="$KUBECONFIG" describe $@
+}
+
+kget() {
+  log_info "running: kubectl get --no-headers -owide $@"
+  kubectl --kubeconfig="$KUBECONFIG" get --no-headers -owide $@
+}
+
+kexec() {
+  log_info "running: kubectl exec $@"
+  kubectl --kubeconfig="$KUBECONFIG" exec "$@"
+}
+
+kdelete() {
+  log_info "running: kubectl delete --force $@"
+  kubectl --kubeconfig="$KUBECONFIG" delete --force $@
+}
+
+get_cluster_info() {
+  # Get CaaSP version
+  log_info "getting caasp version from master-1"
+  CAASP_VERSION=$(ssh -F $ENVIRONMENT_SSH master-1 cat /etc/os-release | grep -E "^VERSION=" | sed 's/[a-zA-Z"=]*//g; s/\..*$//')
+  
+  # Get Kubernetes Cluster CIDR
+  log_info "getting cluster cidr from master-1"
+  CLUSTER_CIDR=$(ssh -F $ENVIRONMENT_SSH master-1 cat /etc/kubernetes/controller-manager |grep cluster-cidr| awk -F'=' '{ print $2 }' | sed 's/ \\//')
+}
+
+# Find a working wildcard domain service
+get_wildcard_domain() {
+  # Test the wildcard on localhost
+  domain=
+  for dns in xip.io nip.io lvh.me; do
+    if ping -c 3 127.0.0.1.$dns > /dev/null 2>&1; then
+      log_info "testing wildcard domain: $dns"
+      WILDCARD_DOMAIN=$dns && log_info "using wildcard domain: $WILDCARD_DOMAIN"
+      return
+    else
+      log_warn "$dns not available, checking next..."
+    fi
+  done
+
+  if [[ -z $WILDCARD_DOMAIN ]]; then
+    log_error "no wildcard domain available, aborting" && abort
+  fi
+}
+
+# Test URL based on response status code
+check_url() {
+  url=$1
+
+  retcode=$(curl -I -s -o /dev/null -w "%{http_code}" $url)
+  if [[ $retcode == 200 || $retcode == 201 || $retcode == 202 ]]; then
+    log_info "URL OK, status code: $retcode"
+    return 0
+  else
+    log_info "URL NOK, status code: $retcode"
+    return 1
+  fi
+}
+
+###########
+### CAP ###
+###########
+deploy_cap() {
+  local yamldir="$DIR/cap"
+
+  # Return $CAASP_VERSION and $CLUSTER_CIDR
+  get_cluster_info
+
+  log_action "DEPLOY CAP"
+
+  # check if helm command exist
+  if ! hash helm > /dev/null 2>&1; then
+    log_error "helm does not exist" && abort
+  fi
+
+  # Generate a password
+  if [[ ! -s "$yamldir/password" ]]; then
+    uuidgen > "$yamldir/password"
+  fi
+  password=$(cat $yamldir/password)
+
+  # Configure helm
+  log_info "initializing helm in $HELM_HOME"
+  helm init --client-only
+
+  suse_repo="https://kubernetes-charts.suse.com/"
+  if helm repo list | grep $suse_repo; then
+    log_info "suse chart repository already added"
+  else
+    log_info "adding suse chart repository"
+    helm repo add suse https://kubernetes-charts.suse.com/
+  fi
+
+  log_info "repository list:"
+  helm repo list
+
+  log_info "available suse charts:"
+  helm search suse
+
+  log_info "creating uaa,scf and stratos namespaces"
+  apply_manifest $yamldir/cap-namespaces.yaml
+
+  # Create suse.cap.psp 
+  # Apply suse:caasp:psp:privileged ClusterRole
+  if [[ $CAASP_VERSION -gt "2" ]]; then
+    log_info "[WORKAROUND] creating suse.cap.psp.scf psp and clusterrole"
+    apply_manifest $yamldir/cap-psp.yaml
+    log_info "[WORKAROUND] creating rbac roles for default serviceaccount in scf namespace"
+    apply_manifest $yamldir/cap-sa-rbac-with-psp.yaml
+  fi
+
+  log_info "creating ceph-secret-admin in the cap namespaces"
+  apply_manifest $yamldir/cap-secrets.yaml
+
+  # Get a wildcard domain, return $WILDCARD_DOMAIN
+  get_wildcard_domain
+
+  # Configure scf-config-values.yaml
+  # Add secrets
+  sed -i "s/UAA_ADMIN_CLIENT_SECRET:.*/UAA_ADMIN_CLIENT_SECRET: $password/" $yamldir/scf-config-values.yaml
+  sed -i "s/CLUSTER_ADMIN_PASSWORD:.*/CLUSTER_ADMIN_PASSWORD: $password/" $yamldir/scf-config-values.yaml
+
+  worker_nodes=$(kget nodes | grep -v master | awk '{print $1}')
+  #worker_nodes_fqdn=$(cat $ENVIRONMENT | jq '.minions[] | select(.role=="worker") | .fqdn')
+  for node in $worker_nodes; do
+    if kget nodes $node | grep "Ready\s"; then
+      worker_private_ip=$(kget nodes $node -o jsonpath='{.status.addresses[?(@.type=="InternalIP")].address}')
+
+      worker_public_ip=$(cat $ENVIRONMENT | jq -r ".minions[] | select(.addresses.privateIpv4 == \"$worker_private_ip\") | .addresses.publicIpv4")
+
+      # For OpenStack, we have to use the floating IP that
+      # points to the worker node
+      if [[ $worker_public_ip != $worker_private_ip ]]; then
+        domain=$worker_public_ip.$WILDCARD_DOMAIN
+      else
+        domain=$worker_private_ip.$WILDCARD_DOMAIN
+      fi
+
+      # Internal IP of the worker node
+      external_ip=$worker_private_ip
+
+      # Replace values in config file
+      sed -i "s/DOMAIN:.*/DOMAIN: $domain/" $yamldir/scf-config-values.yaml
+      sed -i "s/UAA_HOST:.*/UAA_HOST: uaa.$domain/" $yamldir/scf-config-values.yaml
+      sed -i "s/external_ips:.*/external_ips: \[\"$external_ip\"\]/" $yamldir/scf-config-values.yaml
+
+      log_info "worker node: $node"
+      log_info "worker private IP: $worker_private_ip"
+      log_info "worker public IP: $worker_public_ip"
+
+      log_info "scf-config-values.yaml content:"
+      cat $yamldir/scf-config-values.yaml
+      break
+    fi
+  done
+
+  # Deploy UAA
+  log_info "helm: deploying UAA"
+  if ! helm list | grep uaa; then
+    helm install suse/uaa --name uaa --namespace uaa --values $yamldir/scf-config-values.yaml
+  fi
+  wait_until_all_ns_ready uaa
+
+  # Get UAA CA CERT
+  SECRET=$(kget pods --namespace uaa -o jsonpath='{.items[*].spec.containers[?(.name=="uaa")].env[?(.name=="INTERNAL_CA_CERT")].valueFrom.secretKeyRef.name}')
+  CA_CERT="$(kget secret $SECRET --namespace uaa -o jsonpath="{.data['internal-ca-cert']}" | base64 --decode -)"
+
+  # Deploy SCF
+  log_info "helm: deploying SCF"
+  if ! helm list | grep scf; then
+    helm install suse/cf --name scf --namespace scf --values $yamldir/scf-config-values.yaml --set "secrets.UAA_CA_CERT=${CA_CERT}"
+  fi
+  wait_until_all_ns_ready scf 3200
+
+
+  # Deploy STRATOS
+  log_info "helm: deploying STRATOS"
+  if ! helm list | grep stratos; then
+    helm install suse/console --name stratos --namespace stratos --values $yamldir/scf-config-values.yaml
+  fi
+  wait_until_all_ns_ready stratos
+}
+
+test_cap() {
+  local yamldir="$DIR/cap"
+
+  # check if cf command exist
+  if ! hash cf > /dev/null 2>&1; then
+    log_error "cf does not exist" && abort
+  fi
+
+  # Deploy CAP
+  if [[ $DEPLOY == true ]];then
+    deploy_cap
+  fi
+
+  log_action "TEST CAP"
+
+  # Default values
+  domain=$(grep "DOMAIN:" $yamldir/scf-config-values.yaml | awk '{print $2}')
+  password=$(grep "CLUSTER_ADMIN_PASSWORD:" $yamldir/scf-config-values.yaml | awk '{print $2}')
+  space="qa_deploy"
+
+  go_app="test-app-go"
+  php_app="test-app-php"
+
+  # Login
+  log_info "logging to the API"
+  cf login --skip-ssl-validation -a https://api.$domain -u admin -p $password
+
+  # Create and use the space
+  log_info "creating space: $space"
+  cf create-space $space
+
+  log_info "targeting the space: $space"
+  cf target -o system -s $space
+
+  # Deploy an application
+  for app in $php_app $go_app; do
+    # Extract application
+    tar --overwrite -zxf "$yamldir/$app.tgz" -C "$yamldir"
+
+    # Push app
+    log_info "pushing app: $app"
+    cf app $app > /dev/null 2>&1 || cf push "$app" -p "$yamldir/$app"
+
+    # Show app
+    app=$(cf app $app)
+    appurl=$(echo -e "$app" | grep -E  "^routes.*" | awk '{print $2}')
+    log_info "application url: $appurl"
+
+    # Test we can access to the app
+    log_test_info "trying to fetch url: $appurl"
+    check_url $appurl && check_result $? || check_result $?
+  done
+
+  log_info "show running apps"
+  cf apps
+}
+
+destroy_cap() {
+  yamldir="$DIR/cap"
+  names="uaa scf stratos"
+
+  # Return $CAASP_VERSION and $CLUSTER_CIDR
+  get_cluster_info
+
+  log_action "DESTROY CAP"
+
+  if [[ $CAASP_VERSION -gt "2" ]]; then
+    log_info "[WORKAROUND] deleting suse.cap.psp.scf psp and clusterrole"
+    delete_manifest $yamldir/cap-psp.yaml
+    log_info "[WORKAROUND] deleting rbac roles for default serviceaccount in scf namespace"
+    delete_manifest $yamldir/cap-sa-rbac-with-psp.yaml
+  fi
+
+  log_info "deleting namespaces $names"
+  delete_manifest $yamldir/cap-namespaces.yaml
+  for name in $names; do
+    NAME=$name && wait_until_deleted namespaces
+  done
+
+  log_info "helm: deleting $names"
+  helm delete $names --purge
+}
+
+# Check if commands exist
+for cmd in "kubectl helm jq"; do
+  if ! hash $cmd > /dev/null 2>&1; then
+    log_error "$cmd does not exist, aborting..." && abort
+  fi
+done
+
+case "$ACTION" in
+  deploy-cap)
+    deploy_cap
+    ;;
+  destroy-cap)
+    destroy_cap
+    ;;
+  test-cap)
+    test_cap
+    ;;
+  *)
+    echo "$USAGE"
+    exit 1
+    ;;
+esac
+
+log_info "Done"
