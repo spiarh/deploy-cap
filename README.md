@@ -2,10 +2,6 @@
 
 This script covers the deployment and the test of SUSE Cloud Application Platform (CAP).
 
-**Note for CAP**:
-
-The script will only work from **CAP 2.8.0**.
-
 ## SUSE Cloud Application Platform (CAP)
 
 SUSE Cloud Application Platform is an interesting use case for Ceph RBD storage class 
@@ -28,32 +24,35 @@ Usage:
 
   * Deploy CAP
 
-    --deploy-cap                                  Deploy Cloud Application Platform
+    --deploy                                  Deploy Cloud Application Platform
 
   * Test CAP
 
-    --test-cap                                    Run tests on Cloud Application Platform
+    --test                                    Run tests on Cloud Application Platform
 
   * Destroy CAP
 
-    --destroy-cap                                 Destroy the Cloud Application Platform deployment
+    --destroy                                Destroy the Cloud Application Platform deployment
 
 * General Options
 
-    -ds|--deploy-server                           Deploy the server part when used with --test-volumetype (see example 2)
-    -sc|--storage-class                           'persistent' name of the storage class to use for persistent storage
-    -e|--environment     <FNAME>                  'environment.json' file path ($ENVIRONMENT)
-    -k|--kubeconfig      <FNAME>                  'kubeconfig' file path ($KUBECONFIG)
-    -ssh|--ssh-config    <FNAME>                  'environment.ssh_config' file path ($ENVIRONMENT_SSH)
+    -ds|--deploy-server                      Deploy the server part when used with --test-volumetype (see example 2)
+    --uaa-chart-version                      UAA helm chart version, use latest if not specified
+    --scf-chart-version                      SCF helm chart version, use latest if not specified
+    --stratos-chart-version                  STRATOS helm chart version, use latest if not specified
+    -sc|--storage-class                      'persistent' name of the storage class to use for persistent storage
+    -e|--environment     <FNAME>             'environment.json' file path ($ENVIRONMENT)
+    -k|--kubeconfig      <FNAME>             'kubeconfig' file path ($KUBECONFIG)
+    -ssh|--ssh-config    <FNAME>             'environment.ssh_config' file path ($ENVIRONMENT_SSH)
 
   * Examples:
 
-  ./deploy-cap --deploy-cap -k kubeconfig -sc persistent -ssh environment.ssh_config -e environment.json
-  ./deploy-cap --test-cap -k kubeconfig -ssh environment.ssh_config -e environment.json
+  ./cap --deploy -k kubeconfig -sc persistent -ssh environment.ssh_config -e environment.json
+  ./cap --test -k kubeconfig -ssh environment.ssh_config -e environment.json
     # is the same as:
-  ./deploy-cap --test-cap -ds -k kubeconfig -ssh environment.ssh_config -e environment.json
+  ./cap --test -ds -k kubeconfig -ssh environment.ssh_config -e environment.json
 
-  ./deploy-cap --destroy-cap -k kubeconfig -ssh environment.ssh_config -e environment.json
+  ./cap --destroy -k kubeconfig -ssh environment.ssh_config -e environment.json
 
 # Requirements:
  - 'kubeconfig' file
@@ -62,5 +61,4 @@ Usage:
  - 'kubectl' executable in path
  - 'helm' executable in path
  - 'jq' executable in path
- - 'cf' executable in path
 ```
