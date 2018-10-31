@@ -333,9 +333,6 @@ deploy_cap() {
     apply_manifest $yamldir/cap-sa-rbac-with-psp.yaml
   fi
 
-  log_info "creating ceph-secret-admin in the cap namespaces"
-  apply_manifest $yamldir/cap-secrets.yaml
-
   # Get a wildcard domain, return $WILDCARD_DOMAIN
   get_wildcard_domain
 
