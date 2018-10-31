@@ -1,16 +1,5 @@
 # CAP deployment
 
-
-
-TODO: 
-
-```
-Add option to configure the version
-Add option to configure the sizing of the deployment ???
-```
-
-
-
 This script covers the deployment and the test of SUSE Cloud Application Platform (CAP).
 
 **Note for CAP**:

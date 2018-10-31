@@ -11,6 +11,9 @@ MOUNT_PATH="/mnt"
 export HELM_HOME="$DIR/cap/.helm"
 ## Default file path in automation
 STORAGE_CLASS="persistent"
+UAA_CHART_VERSION=""
+SCF_CHART_VERSION=""
+STRATOS_CHART_VERSION=""
 ENVIRONMENT=${ENVIRONMENT:-$DIR/../../environment.json}
 ENVIRONMENT_SSH=${ENVIRONMENT_SSH:-$DIR/../../environment.ssh_config}
 KUBECONFIG=${KUBECONFIG:-$DIR/../../kubeconfig}
@@ -41,6 +44,9 @@ Usage:
 * General Options
 
     -ds|--deploy-server                           Deploy the server part when used with --test-volumetype (see example 2)
+    --uaa-chart-version                           UAA helm chart version, use latest if not specified
+    --scf-chart-version                           SCF helm chart version, use latest if not specified
+    --stratos-chart-version                       STRATOS helm chart version, use latest if not specified
     -sc|--storage-class                           'persistent' name of the storage class to use for persistent storage
     -e|--environment     <FNAME>                  'environment.json' file path (\$ENVIRONMENT)
     -k|--kubeconfig      <FNAME>                  'kubeconfig' file path (\$KUBECONFIG)
@@ -105,6 +111,22 @@ while [[ $# > 0 ]] ; do
     --test-cap)
       ACTION="test-cap"
       ;;
+    -sc|--storage-class)
+      STORAGE_CLASS="$2"
+      shift
+      ;;
+    --uaa-chart-version)
+      UAA_CHART_VERSION="$2"
+      shift
+      ;;
+    --scf-chart-version)
+      SCF_CHART_VERSION="$2"
+      shift
+      ;;
+    --stratos-chart-version)
+      STRATOS_CHART_VERSION="$2"
+      shift
+      ;;
     -k|--kubeconfig)
       KUBECONFIG="$2"
       shift
@@ -115,10 +137,6 @@ while [[ $# > 0 ]] ; do
       ;;
     -ssh|--ssh-config)
       ENVIRONMENT_SSH="$2"
-      shift
-      ;;
-    -sc|--storage-class)
-      STORAGE_CLASS="$2"
       shift
       ;;
     -ds|--deploy-server)
@@ -385,7 +403,7 @@ deploy_cap() {
   # Deploy UAA
   log_info "helm: deploying UAA"
   if ! helm list | grep uaa; then
-    helm install suse/uaa --name uaa --namespace uaa --values $yamldir/scf-config-values.yaml
+    helm install suse/uaa --name uaa --namespace uaa --values $yamldir/scf-config-values.yaml ${UAA_CHART_VERSION:+--version $UAA_CHART_VERSION}
   fi
   wait_until_all_ns_ready uaa
 
@@ -396,7 +414,7 @@ deploy_cap() {
   # Deploy SCF
   log_info "helm: deploying SCF"
   if ! helm list | grep scf; then
-    helm install suse/cf --name scf --namespace scf --values $yamldir/scf-config-values.yaml --set "secrets.UAA_CA_CERT=${CA_CERT}"
+    helm install suse/cf --name scf --namespace scf --values $yamldir/scf-config-values.yaml --set "secrets.UAA_CA_CERT=${CA_CERT}" ${SCF_CHART_VERSION:+--version $SCF_CHART_VERSION}
   fi
   wait_until_all_ns_ready scf 3200
 
@@ -404,7 +422,7 @@ deploy_cap() {
   # Deploy STRATOS
   log_info "helm: deploying STRATOS"
   if ! helm list | grep stratos; then
-    helm install suse/console --name stratos --namespace stratos --values $yamldir/scf-config-values.yaml
+    helm install suse/console --name stratos --namespace stratos --values $yamldir/scf-config-values.yaml ${STRATOS_CHART_VERSION:+--version $STRATOS_CHART_VERSION}
   fi
   wait_until_all_ns_ready stratos
 }
@@ -475,9 +493,9 @@ destroy_cap() {
 
   log_action "DESTROY CAP"
 
-  log_info "[WORKAROUND] deleting suse.cap.psp.scf psp and clusterrole"
+  log_info "deleting suse.cap.psp.scf psp and clusterrole"
   delete_manifest $yamldir/cap-psp.yaml
-  log_info "[WORKAROUND] deleting rbac roles for default serviceaccount in scf namespace"
+  log_info "deleting rbac roles for default serviceaccount in scf namespace"
   delete_manifest $yamldir/cap-sa-rbac-with-psp.yaml
 
   log_info "deleting namespaces $names"
