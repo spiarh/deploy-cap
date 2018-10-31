@@ -8,7 +8,6 @@ TODO:
 Add option to set/configure the storage class
 Add option to configure the version
 Add option to configure the sizing of the deployment ???
-add awk for multi secrets
 ```
 
 

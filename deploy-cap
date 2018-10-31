@@ -386,7 +386,7 @@ deploy_cap() {
   wait_until_all_ns_ready uaa
 
   # Get UAA CA CERT
-  SECRET=$(kget pods --namespace uaa -o jsonpath='{.items[*].spec.containers[?(.name=="uaa")].env[?(.name=="INTERNAL_CA_CERT")].valueFrom.secretKeyRef.name}')
+  SECRET=$(kget pods --namespace uaa -o jsonpath='{.items[*].spec.containers[?(.name=="uaa")].env[?(.name=="INTERNAL_CA_CERT")].valueFrom.secretKeyRef.name}' | awk '{ print $1 }')
   CA_CERT="$(kget secret $SECRET --namespace uaa -o jsonpath="{.data['internal-ca-cert']}" | base64 --decode -)"
 
   # Deploy SCF
