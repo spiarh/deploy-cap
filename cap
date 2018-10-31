@@ -3,12 +3,13 @@
 set -euo pipefail
 
 DIR="$( cd "$( dirname "$0" )" && pwd )"
+FILES_DIR="$DIR/files"
 
 # Options
 ACTION=""
 # Default mount path in containers
 MOUNT_PATH="/mnt"
-export HELM_HOME="$DIR/cap/.helm"
+export HELM_HOME="$FILES_DIR/.helm"
 ## Default file path in automation
 STORAGE_CLASS="persistent"
 UAA_CHART_VERSION=""
@@ -31,35 +32,35 @@ Usage:
 
   * Deploy CAP
 
-    --deploy-cap                                  Deploy Cloud Application Platform
+    --deploy                                  Deploy Cloud Application Platform
 
   * Test CAP
 
-    --test-cap                                    Run tests on Cloud Application Platform
+    --test                                    Run tests on Cloud Application Platform
 
   * Destroy CAP
 
-    --destroy-cap                                 Destroy the Cloud Application Platform deployment
+    --destroy                                Destroy the Cloud Application Platform deployment
 
 * General Options
 
-    -ds|--deploy-server                           Deploy the server part when used with --test-volumetype (see example 2)
-    --uaa-chart-version                           UAA helm chart version, use latest if not specified
-    --scf-chart-version                           SCF helm chart version, use latest if not specified
-    --stratos-chart-version                       STRATOS helm chart version, use latest if not specified
-    -sc|--storage-class                           'persistent' name of the storage class to use for persistent storage
-    -e|--environment     <FNAME>                  'environment.json' file path (\$ENVIRONMENT)
-    -k|--kubeconfig      <FNAME>                  'kubeconfig' file path (\$KUBECONFIG)
-    -ssh|--ssh-config    <FNAME>                  'environment.ssh_config' file path (\$ENVIRONMENT_SSH)
+    -ds|--deploy-server                      Deploy the server part when used with --test-volumetype (see example 2)
+    --uaa-chart-version                      UAA helm chart version, use latest if not specified
+    --scf-chart-version                      SCF helm chart version, use latest if not specified
+    --stratos-chart-version                  STRATOS helm chart version, use latest if not specified
+    -sc|--storage-class                      'persistent' name of the storage class to use for persistent storage
+    -e|--environment     <FNAME>             'environment.json' file path (\$ENVIRONMENT)
+    -k|--kubeconfig      <FNAME>             'kubeconfig' file path (\$KUBECONFIG)
+    -ssh|--ssh-config    <FNAME>             'environment.ssh_config' file path (\$ENVIRONMENT_SSH)
 
   * Examples:
 
-  $0 --deploy-cap -k kubeconfig -sc persistent -ssh environment.ssh_config -e environment.json
-  $0 --test-cap -k kubeconfig -ssh environment.ssh_config -e environment.json
+  $0 --deploy -k kubeconfig -sc persistent -ssh environment.ssh_config -e environment.json
+  $0 --test -k kubeconfig -ssh environment.ssh_config -e environment.json
     # is the same as:
-  $0 --test-cap -ds -k kubeconfig -ssh environment.ssh_config -e environment.json
+  $0 --test -ds -k kubeconfig -ssh environment.ssh_config -e environment.json
 
-  $0 --destroy-cap -k kubeconfig -ssh environment.ssh_config -e environment.json
+  $0 --destroy -k kubeconfig -ssh environment.ssh_config -e environment.json
 
 # Requirements:
  - 'kubeconfig' file
@@ -102,14 +103,14 @@ check_file() { if [ ! -f $1 ]; then error "File $1 doesn't exist!"; fi }
 # Parse options
 while [[ $# > 0 ]] ; do
   case $1 in
-    --deploy-cap)
-      ACTION="deploy-cap"
+    --deploy)
+      ACTION="deploy"
       ;;
-    --destroy-cap)
-      ACTION="destroy-cap"
+    --destroy)
+      ACTION="destroy"
       ;;
-    --test-cap)
-      ACTION="test-cap"
+    --test)
+      ACTION="test"
       ;;
     -sc|--storage-class)
       STORAGE_CLASS="$2"
@@ -164,6 +165,10 @@ wait_until_ready() {
       resource="deployments"
       ready_column="5"
       ;;
+    po|pods)
+      resource="pods"
+      ready_column="2"
+      ;;
     rs|replicasets)
       resource="replicasets"
       ready_column="4"
@@ -176,11 +181,22 @@ wait_until_ready() {
 
   namespace=${2:-default}
   timeout=${3:-600}
-  target_num=$( kget $resource $NAME -n $namespace | awk '{print $2}' )
+
+  if [[ $resource != "pods" ]]; then
+    target_num=$( kget $resource $NAME -n $namespace | awk '{print $2}' )
+  fi
 
   for elapsed in $(seq 0 $timeout); do
     log_info "[$elapsed / $timeout] checking $resource/$NAME in namespace $namespace"
     current_available_num=$( kget $resource $NAME -n $namespace | awk "{print $"$ready_column"}" )
+
+    if [[ $resource == "pods" ]]; then
+      # Parse READY column from pod n/n
+      pod_ready_status=$current_available_num
+      current_available_num=$(echo $pod_ready_status | awk -F'/' '{print $1}')
+      target_num=$(echo $pod_ready_status | awk -F'/' '{print $2}')
+    fi
+
     log_info "current: $current_available_num / $target_num"
     [[ $current_available_num -eq "$target_num" ]] && log_info "ready" && return
     log_info "not ready yet"
@@ -193,7 +209,7 @@ wait_until_ready() {
 # Wait until all workload resources are ready in a namespace
 # It is a wrapper around wait_until_ready
 wait_until_all_ns_ready() {
-  resources="daemonsets deployments replicasets statefulsets"
+  resources="daemonsets deployments replicasets statefulsets pods"
   namespace=${1:-default}
   timeout=${2:-3200}
 
@@ -308,8 +324,7 @@ check_url() {
 ###########
 ### CAP ###
 ###########
-deploy_cap() {
-  local yamldir="$DIR/cap"
+deploy() {
 
   # Return $CAASP_VERSION and $CLUSTER_CIDR
   get_cluster_info
@@ -322,10 +337,10 @@ deploy_cap() {
   fi
 
   # Generate a password
-  if [[ ! -s "$yamldir/password" ]]; then
-    uuidgen > "$yamldir/password"
+  if [[ ! -s "$FILES_DIR/password" ]]; then
+    uuidgen > "$FILES_DIR/password"
   fi
-  password=$(cat $yamldir/password)
+  password=$(cat $FILES_DIR/password)
 
   # Configure helm
   log_info "initializing helm in $HELM_HOME"
@@ -346,25 +361,25 @@ deploy_cap() {
   helm search suse
 
   log_info "creating uaa,scf and stratos namespaces"
-  apply_manifest $yamldir/cap-namespaces.yaml
+  apply_manifest $FILES_DIR/cap-namespaces.yaml
 
   # Create suse.cap.psp 
   # Apply suse:caasp:psp:privileged ClusterRole
   log_info "creating suse.cap.psp.scf psp and clusterrole"
-  apply_manifest $yamldir/cap-psp.yaml
+  apply_manifest $FILES_DIR/cap-psp.yaml
   log_info "creating rbac roles for default serviceaccount in scf namespace"
-  apply_manifest $yamldir/cap-sa-rbac-with-psp.yaml
+  apply_manifest $FILES_DIR/cap-sa-rbac-with-psp.yaml
 
   # Get a wildcard domain, return $WILDCARD_DOMAIN
   get_wildcard_domain
 
   # Configure scf-config-values.yaml
   # Add secrets
-  sed -i "s/UAA_ADMIN_CLIENT_SECRET:.*/UAA_ADMIN_CLIENT_SECRET: $password/" $yamldir/scf-config-values.yaml
-  sed -i "s/CLUSTER_ADMIN_PASSWORD:.*/CLUSTER_ADMIN_PASSWORD: $password/" $yamldir/scf-config-values.yaml
+  sed -i "s/UAA_ADMIN_CLIENT_SECRET:.*/UAA_ADMIN_CLIENT_SECRET: $password/" $FILES_DIR/scf-config-values.yaml
+  sed -i "s/CLUSTER_ADMIN_PASSWORD:.*/CLUSTER_ADMIN_PASSWORD: $password/" $FILES_DIR/scf-config-values.yaml
 
   # Add storage class
-  sed -i "s/persistent:.*/persistent: $STORAGE_CLASS/" $yamldir/scf-config-values.yaml
+  sed -i "s/persistent:.*/persistent: $STORAGE_CLASS/" $FILES_DIR/scf-config-values.yaml
 
   worker_nodes=$(kget nodes | grep -v master | awk '{print $1}')
   #worker_nodes_fqdn=$(cat $ENVIRONMENT | jq '.minions[] | select(.role=="worker") | .fqdn')
@@ -386,16 +401,16 @@ deploy_cap() {
       external_ip=$worker_private_ip
 
       # Replace values in config file
-      sed -i "s/DOMAIN:.*/DOMAIN: $domain/" $yamldir/scf-config-values.yaml
-      sed -i "s/UAA_HOST:.*/UAA_HOST: uaa.$domain/" $yamldir/scf-config-values.yaml
-      sed -i "s/external_ips:.*/external_ips: \[\"$external_ip\"\]/" $yamldir/scf-config-values.yaml
+      sed -i "s/DOMAIN:.*/DOMAIN: $domain/" $FILES_DIR/scf-config-values.yaml
+      sed -i "s/UAA_HOST:.*/UAA_HOST: uaa.$domain/" $FILES_DIR/scf-config-values.yaml
+      sed -i "s/external_ips:.*/external_ips: \[\"$external_ip\"\]/" $FILES_DIR/scf-config-values.yaml
 
       log_info "worker node: $node"
       log_info "worker private IP: $worker_private_ip"
       log_info "worker public IP: $worker_public_ip"
 
       log_info "scf-config-values.yaml content:"
-      cat $yamldir/scf-config-values.yaml
+      cat $FILES_DIR/scf-config-values.yaml
       break
     fi
   done
@@ -403,7 +418,7 @@ deploy_cap() {
   # Deploy UAA
   log_info "helm: deploying UAA"
   if ! helm list | grep uaa; then
-    helm install suse/uaa --name uaa --namespace uaa --values $yamldir/scf-config-values.yaml ${UAA_CHART_VERSION:+--version $UAA_CHART_VERSION}
+    helm install suse/uaa --name uaa --namespace uaa --values $FILES_DIR/scf-config-values.yaml ${UAA_CHART_VERSION:+--version $UAA_CHART_VERSION}
   fi
   wait_until_all_ns_ready uaa
 
@@ -414,7 +429,7 @@ deploy_cap() {
   # Deploy SCF
   log_info "helm: deploying SCF"
   if ! helm list | grep scf; then
-    helm install suse/cf --name scf --namespace scf --values $yamldir/scf-config-values.yaml --set "secrets.UAA_CA_CERT=${CA_CERT}" ${SCF_CHART_VERSION:+--version $SCF_CHART_VERSION}
+    helm install suse/cf --name scf --namespace scf --values $FILES_DIR/scf-config-values.yaml --set "secrets.UAA_CA_CERT=${CA_CERT}" ${SCF_CHART_VERSION:+--version $SCF_CHART_VERSION}
   fi
   wait_until_all_ns_ready scf 3200
 
@@ -422,14 +437,12 @@ deploy_cap() {
   # Deploy STRATOS
   log_info "helm: deploying STRATOS"
   if ! helm list | grep stratos; then
-    helm install suse/console --name stratos --namespace stratos --values $yamldir/scf-config-values.yaml ${STRATOS_CHART_VERSION:+--version $STRATOS_CHART_VERSION}
+    helm install suse/console --name stratos --namespace stratos --values $FILES_DIR/scf-config-values.yaml ${STRATOS_CHART_VERSION:+--version $STRATOS_CHART_VERSION}
   fi
   wait_until_all_ns_ready stratos
 }
 
 test_cap() {
-  local yamldir="$DIR/cap"
-
   # check if cf command exist
   if ! hash cf > /dev/null 2>&1; then
     log_error "cf does not exist" && abort
@@ -437,14 +450,14 @@ test_cap() {
 
   # Deploy CAP
   if [[ $DEPLOY == true ]];then
-    deploy_cap
+    deploy
   fi
 
   log_action "TEST CAP"
 
   # Default values
-  domain=$(grep "DOMAIN:" $yamldir/scf-config-values.yaml | awk '{print $2}')
-  password=$(grep "CLUSTER_ADMIN_PASSWORD:" $yamldir/scf-config-values.yaml | awk '{print $2}')
+  domain=$(grep "DOMAIN:" $FILES_DIR/scf-config-values.yaml | awk '{print $2}')
+  password=$(grep "CLUSTER_ADMIN_PASSWORD:" $FILES_DIR/scf-config-values.yaml | awk '{print $2}')
   space="qa_deploy"
 
   go_app="test-app-go"
@@ -464,11 +477,11 @@ test_cap() {
   # Deploy an application
   for app in $php_app $go_app; do
     # Extract application
-    tar --overwrite -zxf "$yamldir/$app.tgz" -C "$yamldir"
+    tar --overwrite -zxf "$FILES_DIR/$app.tgz" -C "$FILES_DIR"
 
     # Push app
     log_info "pushing app: $app"
-    cf app $app > /dev/null 2>&1 || cf push "$app" -p "$yamldir/$app"
+    cf app $app > /dev/null 2>&1 || cf push "$app" -p "$FILES_DIR/$app"
 
     # Show app
     app=$(cf app $app)
@@ -484,8 +497,7 @@ test_cap() {
   cf apps
 }
 
-destroy_cap() {
-  yamldir="$DIR/cap"
+destroy() {
   names="uaa scf stratos"
 
   # Return $CAASP_VERSION and $CLUSTER_CIDR
@@ -494,12 +506,12 @@ destroy_cap() {
   log_action "DESTROY CAP"
 
   log_info "deleting suse.cap.psp.scf psp and clusterrole"
-  delete_manifest $yamldir/cap-psp.yaml
+  delete_manifest $FILES_DIR/cap-psp.yaml
   log_info "deleting rbac roles for default serviceaccount in scf namespace"
-  delete_manifest $yamldir/cap-sa-rbac-with-psp.yaml
+  delete_manifest $FILES_DIR/cap-sa-rbac-with-psp.yaml
 
   log_info "deleting namespaces $names"
-  delete_manifest $yamldir/cap-namespaces.yaml
+  delete_manifest $FILES_DIR/cap-namespaces.yaml
   for name in $names; do
     NAME=$name && wait_until_deleted namespaces
   done
@@ -516,13 +528,13 @@ for cmd in "kubectl helm jq"; do
 done
 
 case "$ACTION" in
-  deploy-cap)
-    deploy_cap
+  "deploy")
+    deploy
     ;;
-  destroy-cap)
-    destroy_cap
+  "destroy")
+    destroy
     ;;
-  test-cap)
+  "test")
     test_cap
     ;;
   *)

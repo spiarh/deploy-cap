@@ -1,0 +1,311 @@
+apiVersion: v1
+entries:
+  cf:
+  - apiVersion: 2.13.3+cf2.7.0.0.gf95d9aed
+    created: 2018-10-18T17:10:16.244186234Z
+    description: A Helm chart for SUSE Cloud Foundry
+    digest: dca1d5b4d45f5aed7c87f360a70ca037dc55503dfac4cc69f1d48d785529e9f2
+    name: cf
+    urls:
+    - https://kubernetes-charts.suse.com/cf-2.13.3.tgz
+    version: 2.13.3
+  - apiVersion: 2.11.0+cf1.36.0.0.g4c9e9ae1
+    created: 2018-09-19T19:44:08.19326114Z
+    description: A Helm chart for SUSE Cloud Foundry
+    digest: 7aa78d7cb368144143f4c6ec66067804549ae91418f9204125dc6fc3f8ef1f29
+    name: cf
+    urls:
+    - https://kubernetes-charts.suse.com/cf-2.11.0.tgz
+    version: 2.11.0
+  - apiVersion: 2.10.1+cf1.15.0.0.g647b2273
+    created: 2018-08-03T12:12:28.979783331Z
+    description: A Helm chart for SUSE Cloud Foundry
+    digest: 036b2f5563f14f1f8f971c7f43c841b4ebba47f9e6aadda02a3bcb835f181c55
+    name: cf
+    urls:
+    - https://kubernetes-charts.suse.com/cf-2.10.1.tgz
+    version: 2.10.1
+  - apiVersion: 2.8.0+cf1.15.0.0.g5aa8b036
+    created: 2018-05-16T23:18:31.51293102Z
+    description: A Helm chart for SUSE Cloud Foundry
+    digest: 432c098058a1c10d1d1036965dd51bb2fd19d015691f4ae2a376b3c380fe6da8
+    name: cf
+    urls:
+    - https://kubernetes-charts.suse.com/cf-2.8.0.tgz
+    version: 2.8.0
+  - apiVersion: 2.7.0+cf1.9.0.0.g2d95fcb5
+    created: 2018-03-16T15:37:26.553057939Z
+    description: A Helm chart for SUSE Cloud Foundry
+    digest: 097da280d8ad607ced93c21ae053441d8374bde12a03216a51245283c1239edf
+    name: cf
+    urls:
+    - https://kubernetes-charts.suse.com/cf-2.7.0.tgz
+    version: 2.7.0
+  - apiVersion: 2.6.11+cf278.0.g351f040f
+    created: 2018-01-18T16:05:53.841483866Z
+    description: A Helm chart for SUSE Cloud Foundry
+    digest: 41658db503af586e1a20fde2d0e58c14970a875962be2dcf6336f97554fb0bb5
+    name: cf
+    urls:
+    - https://kubernetes-charts.suse.com/cf-2.6.11.tgz
+    version: 2.6.11
+  - apiVersion: v1
+    created: 2018-01-10T09:40:46.427722373Z
+    description: A Helm chart for SUSE Cloud Foundry
+    digest: d9408ed5180af4ef4851d0a24d3e9f113fbf79f5f9feaa87e181b2bd71516421
+    name: cf
+    urls:
+    - https://kubernetes-charts.suse.com/cf-2.6.1-rc1%2Bcf278.0.g52d7a644.tgz
+    version: 2.6.1-rc1+cf278.0.g52d7a644
+  - apiVersion: v1
+    created: 2017-12-15T08:05:06.964318418Z
+    description: A Helm chart for SUSE Cloud Foundry
+    digest: ad284e3b7be3eb5bdda3ad2f5f87179bd61b0a262d28e917ddedad66a0a01c6f
+    name: cf
+    urls:
+    - https://kubernetes-charts.suse.com/cf-2.5.0-beta4%2Bcf278.0.gafa3d0e9.tgz
+    version: 2.5.0-beta4+cf278.0.gafa3d0e9
+  - apiVersion: v1
+    created: 2017-12-11T16:06:24.31860719Z
+    description: A Helm chart for SUSE Cloud Foundry
+    digest: 05f0d12d9eaffc54e60539d45993212b139d60df646457600026d1b75a629e95
+    name: cf
+    urls:
+    - https://kubernetes-charts.suse.com/cf-2.4.1-beta3%2Bcf278.0.g12f5d3a8.tgz
+    version: 2.4.1-beta3+cf278.0.g12f5d3a8
+  - apiVersion: v1
+    created: 2017-12-01T08:25:15.280098616Z
+    description: A Helm chart for SUSE Cloud Foundry
+    digest: 71627f76109a67af71facddaef0c54ed3085b01d1f93fd6a6efde7ff249dfe20
+    name: cf
+    urls:
+    - https://kubernetes-charts.suse.com/cf-2.0.2.tgz
+    version: 2.0.2
+  cf-usb-sidecar-mysql:
+  - apiVersion: v1
+    created: 2018-10-18T17:10:16.24473201Z
+    description: A Helm chart for SUSE Universal Service Broker Sidecar for access
+      to MySql
+    digest: 1b46ee9a3a47ca60faad7b11eb1f5137bae626fbffad38f2f8e73a129d793f39
+    name: cf-usb-sidecar-mysql
+    urls:
+    - https://kubernetes-charts.suse.com/cf-usb-sidecar-mysql-1.0.1.tgz
+    version: 1.0.1
+  - apiVersion: v1
+    created: 2018-04-17T22:04:59.701046057Z
+    description: A Helm chart for SUSE Universal Service Broker Sidecar for access
+      to MySql
+    digest: e9a535006540b4fc5d3357f6ead417c2ff8f7e9d54eafac59689c756b68d672f
+    name: cf-usb-sidecar-mysql
+    urls:
+    - https://kubernetes-charts.suse.com/cf-usb-sidecar-mysql-0.0.0-pre.35-develop.tgz
+    version: 0.0.0-pre.35-develop
+  - apiVersion: v1
+    created: 2018-05-01T18:55:26.964554602Z
+    description: A Helm chart for SUSE Universal Service Broker Sidecar for access
+      to MySql
+    digest: 44d22528c43382085b4865b95a9f8b7071c59170d3ffc492337a8b54cc9d6f05
+    name: cf-usb-sidecar-mysql
+    urls:
+    - https://kubernetes-charts.suse.com/cf-usb-sidecar-mysql-0.0.0-366-gcf3d373.tgz
+    version: 0.0.0-366-gcf3d373
+  cf-usb-sidecar-postgres:
+  - apiVersion: v1
+    created: 2018-10-18T17:10:16.245389726Z
+    description: A Helm chart for SUSE Universal Service Broker Sidecar for access
+      to PostgreSQL
+    digest: 8591bac67983b597f2be23b92c5c31e3f6359f59864723e82a973101dc6c2b90
+    name: cf-usb-sidecar-postgres
+    urls:
+    - https://kubernetes-charts.suse.com/cf-usb-sidecar-postgres-1.0.1.tgz
+    version: 1.0.1
+  - apiVersion: v1
+    created: 2018-04-17T22:04:59.701380133Z
+    description: A Helm chart for SUSE Universal Service Broker Sidecar for access
+      to PostgreSQL
+    digest: 1ace5091ad937863c4023a4119d899b4b3c57ea68bb3c3f216363648295cb2c5
+    name: cf-usb-sidecar-postgres
+    urls:
+    - https://kubernetes-charts.suse.com/cf-usb-sidecar-postgres-0.0.0-pre.23-develop.tgz
+    version: 0.0.0-pre.23-develop
+  - apiVersion: v1
+    created: 2018-05-01T18:55:26.964989025Z
+    description: A Helm chart for SUSE Universal Service Broker Sidecar for access
+      to PostgreSQL
+    digest: 80be6843fcff0ffe0e008ecc402e831fa6ee20b574da6ca467968ef3148d8655
+    name: cf-usb-sidecar-postgres
+    urls:
+    - https://kubernetes-charts.suse.com/cf-usb-sidecar-postgres-0.0.0-366-gcf3d373.tgz
+    version: 0.0.0-366-gcf3d373
+  console:
+  - apiVersion: v1
+    created: 2018-10-18T17:10:16.246158328Z
+    description: A Helm chart for deploying Stratos UI Console
+    digest: 9429ef8745a3f7d5587730cad7d1ce8497b309a272c0f713e8cfe660e9401fa4
+    name: console
+    urls:
+    - https://kubernetes-charts.suse.com/console-2.1.0.tgz
+    version: 2.1.0
+  - apiVersion: v1
+    created: 2018-08-06T13:15:50.245111445Z
+    description: A Helm chart for deploying Stratos UI Console
+    digest: 85d502640407219f4f5258495b00599c5fb800d2fab891a03f9233a169332b68
+    name: console
+    urls:
+    - https://kubernetes-charts.suse.com/console-2.0.0.tgz
+    version: 2.0.0
+  - apiVersion: v1
+    created: 2018-06-01T10:27:25.765993002Z
+    description: A Helm chart for deploying Stratos UI Console
+    digest: 431db383249f05aade81efa619a57c96c785ce60ce9fb3a2c51850081905beca
+    name: console
+    urls:
+    - https://kubernetes-charts.suse.com/console-1.1.0.tgz
+    version: 1.1.0
+  - apiVersion: v1
+    created: 2018-04-12T10:16:28.672978814Z
+    description: A Helm chart for deploying Stratos UI Console
+    digest: 1707a3cb1c5bd14d8a608a8feba2954f634dc3276cd2cd01635a1cb917efb366
+    name: console
+    urls:
+    - https://kubernetes-charts.suse.com/console-1.0.2.tgz
+    version: 1.0.2
+  - apiVersion: v1
+    created: 2018-03-16T09:41:39.296582305Z
+    description: A Helm chart for deploying Stratos UI Console
+    digest: fa53256bcbc96ac7fb6ee58ce9b2b2f0f1a476f9c0e9c9fd22ee2041d81e06db
+    name: console
+    urls:
+    - https://kubernetes-charts.suse.com/console-1.0.0.tgz
+    version: 1.0.0
+  - apiVersion: v1
+    created: 2017-12-20T13:35:06.788557218Z
+    description: A Helm chart for deploying Stratos UI Console
+    digest: efef6b53ff57072dd3060dbe4936e9bd0aec86e0f09252b58b66822ea747a85a
+    name: console
+    urls:
+    - https://kubernetes-charts.suse.com/console-0.9.9.tgz
+    version: 0.9.9
+  - apiVersion: v1
+    created: 2017-12-12T04:57:36.763213919Z
+    description: A Helm chart for deploying Stratos UI Console
+    digest: a996f5ff23ee226b898cd61235c574862e93ce9fb8de3947e4fb0c948c1c6077
+    name: console
+    urls:
+    - https://kubernetes-charts.suse.com/console-0.9.8.tgz
+    version: 0.9.8
+  - apiVersion: v1
+    created: 2017-11-15T16:55:27.075762399Z
+    description: A Helm chart for deploying Stratos UI Console
+    digest: 01b53c674fd57b91f86068b2ffd00d6c4b4efc1a3083c520fc38fd982092c0fa
+    name: console
+    urls:
+    - https://kubernetes-charts.suse.com/console-0.9.7.tgz
+    version: 0.9.7
+  nginx-ingress:
+  - appVersion: 0.15.0
+    created: 2018-10-18T17:10:16.2482555Z
+    description: An nginx Ingress controller that uses ConfigMap to store the nginx
+      configuration.
+    digest: 55afc440d750825ed9b16d48cf8b891bf93896c49f480f4b4c832a6b11a8530f
+    engine: gotpl
+    home: https://github.com/kubernetes/ingress-nginx
+    icon: https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Nginx_logo.svg/500px-Nginx_logo.svg.png
+    keywords:
+    - ingress
+    - nginx
+    maintainers:
+    - email: jack.zampolin@gmail.com
+      name: jackzampolin
+    - email: mgoodness@gmail.com
+      name: mgoodness
+    - email: chance.zibolski@coreos.com
+      name: chancez
+    name: nginx-ingress
+    sources:
+    - https://github.com/kubernetes/ingress-nginx
+    urls:
+    - https://kubernetes-charts.suse.com/nginx-ingress-0.28.3.tgz
+    version: 0.28.3
+  uaa:
+  - apiVersion: 2.13.3+cf2.7.0.0.gf95d9aed
+    created: 2018-10-18T17:10:16.249412877Z
+    description: A Helm chart for SUSE UAA
+    digest: 3012ef4fa49e8d1eb12d1a006a761697a623d97a2daafb1088db9dcae8272679
+    name: uaa
+    urls:
+    - https://kubernetes-charts.suse.com/uaa-2.13.3.tgz
+    version: 2.13.3
+  - apiVersion: 2.11.0+cf1.36.0.0.g4c9e9ae1
+    created: 2018-09-19T19:44:08.195134111Z
+    description: A Helm chart for SUSE UAA
+    digest: 046b7ef5a7fcb451d5e4a05e6c1535d4900c07108ae7c8ab67fbc4e9a5e98df5
+    name: uaa
+    urls:
+    - https://kubernetes-charts.suse.com/uaa-2.11.0.tgz
+    version: 2.11.0
+  - apiVersion: 2.10.1+cf1.15.0.0.g647b2273
+    created: 2018-08-03T12:12:28.982639495Z
+    description: A Helm chart for SUSE UAA
+    digest: 9d6739cbf76c1231c246a4650a8b06e8ee375556bfaab6c43b7f8fef50b1e70a
+    name: uaa
+    urls:
+    - https://kubernetes-charts.suse.com/uaa-2.10.1.tgz
+    version: 2.10.1
+  - apiVersion: 2.8.0+cf1.15.0.0.g5aa8b036
+    created: 2018-05-16T23:18:31.515029195Z
+    description: A Helm chart for SUSE UAA
+    digest: 20ff331cd0fc3b31e9e4ad1c2f9b759791ec241fa728c13cd5beb7f234f44019
+    name: uaa
+    urls:
+    - https://kubernetes-charts.suse.com/uaa-2.8.0.tgz
+    version: 2.8.0
+  - apiVersion: 2.7.0+cf1.9.0.0.g2d95fcb5
+    created: 2018-03-16T15:37:26.554154515Z
+    description: A Helm chart for SUSE UAA
+    digest: f5527c329111aa7c573780a222686c4c51fc20eb816a5d81d64cc3fd81015fa8
+    name: uaa
+    urls:
+    - https://kubernetes-charts.suse.com/uaa-2.7.0.tgz
+    version: 2.7.0
+  - apiVersion: 2.6.11+cf278.0.g351f040f
+    created: 2018-01-18T16:05:53.843459405Z
+    description: A Helm chart for SUSE UAA
+    digest: 8be517b56368b1cebb3698a81cf59186687efe7d1acc736764f2077e353b2da6
+    name: uaa
+    urls:
+    - https://kubernetes-charts.suse.com/uaa-2.6.11.tgz
+    version: 2.6.11
+  - apiVersion: v1
+    created: 2018-01-10T09:40:46.431615692Z
+    description: A Helm chart for SUSE UAA
+    digest: a7ed159a978ef476db3c0f95cec2f4d4922ea34230cb520951f028d13edc134e
+    name: uaa
+    urls:
+    - https://kubernetes-charts.suse.com/uaa-2.6.1-rc1%2Bcf278.0.g52d7a644.tgz
+    version: 2.6.1-rc1+cf278.0.g52d7a644
+  - apiVersion: v1
+    created: 2017-12-15T08:05:06.965239814Z
+    description: A Helm chart for SUSE UAA
+    digest: 8af1f2b5f9b30fdda07cb2cdf02861a5ea717c72e5b1c8dd3be538121c653029
+    name: uaa
+    urls:
+    - https://kubernetes-charts.suse.com/uaa-2.5.0-beta4%2Bcf278.0.gafa3d0e9.tgz
+    version: 2.5.0-beta4+cf278.0.gafa3d0e9
+  - apiVersion: v1
+    created: 2017-12-11T16:06:24.320517789Z
+    description: A Helm chart for SUSE UAA
+    digest: e03629ff156884d431edb9243a0a03afda0a290940927d7e4e94db98548288f7
+    name: uaa
+    urls:
+    - https://kubernetes-charts.suse.com/uaa-2.4.1-beta3%2Bcf278.0.g12f5d3a8.tgz
+    version: 2.4.1-beta3+cf278.0.g12f5d3a8
+  - apiVersion: v1
+    created: 2017-12-01T08:25:15.281875387Z
+    description: A Helm chart for SUSE UAA
+    digest: 23d8f5da9e69d7809c1408ad8bc683c9f613d7eb78f12161637d12b9b7d2df04
+    name: uaa
+    urls:
+    - https://kubernetes-charts.suse.com/uaa-2.0.2.tgz
+    version: 2.0.2
+generated: 2018-10-18T17:10:16.237992581Z

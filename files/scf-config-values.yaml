@@ -1,28 +1,28 @@
 env:
     # Enter the domain you created for your cluster
-    DOMAIN: 10.84.154.101.xip.io
+    DOMAIN: 10.84.152.234.xip.io
     
     # The fully-qualified domain name of your UAA host
     # This is the external access to the cluster
-    UAA_HOST: uaa.10.84.154.101.xip.io
+    UAA_HOST: uaa.10.84.152.234.xip.io
     
     # The default is 2793
     UAA_PORT: 2793
 
 secrets:    
     # Create a password for your UAA client secret
-    UAA_ADMIN_CLIENT_SECRET: d7c83726-837f-45a4-a946-fd2119e00afb
+    UAA_ADMIN_CLIENT_SECRET: 6a0e95be-1c04-40d3-ab9f-f5a95d70d764
 
     # Create a password for your SUSE Cloud Foundry cluster
-    CLUSTER_ADMIN_PASSWORD: d7c83726-837f-45a4-a946-fd2119e00afb
+    CLUSTER_ADMIN_PASSWORD: 6a0e95be-1c04-40d3-ab9f-f5a95d70d764
 
 kube:
     # The external IP address of the Kubernetes cluster
-    external_ips: ["10.84.154.101"]
+    external_ips: ["10.84.152.234"]
     
     # Your chosen storage class
     storage_class:
-        persistent: "persistent"
+        persistent: persistent
         shared: "shared"
     
     # The Docker registry the images will be fetched from
