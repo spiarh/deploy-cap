@@ -276,7 +276,7 @@ get_cluster_info() {
 get_wildcard_domain() {
   # Test the wildcard on localhost
   domain=
-  for dns in xip.io nip.io lvh.me; do
+  for dns in omg.howdoi.website xip.io nip.io lvh.me; do
     if ping -c 3 127.0.0.1.$dns > /dev/null 2>&1; then
       log_info "testing wildcard domain: $dns"
       WILDCARD_DOMAIN=$dns && log_info "using wildcard domain: $WILDCARD_DOMAIN"
