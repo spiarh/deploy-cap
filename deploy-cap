@@ -326,12 +326,10 @@ deploy_cap() {
 
   # Create suse.cap.psp 
   # Apply suse:caasp:psp:privileged ClusterRole
-  if [[ $CAASP_VERSION -gt "2" ]]; then
-    log_info "[WORKAROUND] creating suse.cap.psp.scf psp and clusterrole"
-    apply_manifest $yamldir/cap-psp.yaml
-    log_info "[WORKAROUND] creating rbac roles for default serviceaccount in scf namespace"
-    apply_manifest $yamldir/cap-sa-rbac-with-psp.yaml
-  fi
+  log_info "[WORKAROUND] creating suse.cap.psp.scf psp and clusterrole"
+  apply_manifest $yamldir/cap-psp.yaml
+  log_info "[WORKAROUND] creating rbac roles for default serviceaccount in scf namespace"
+  apply_manifest $yamldir/cap-sa-rbac-with-psp.yaml
 
   # Get a wildcard domain, return $WILDCARD_DOMAIN
   get_wildcard_domain
@@ -468,12 +466,10 @@ destroy_cap() {
 
   log_action "DESTROY CAP"
 
-  if [[ $CAASP_VERSION -gt "2" ]]; then
-    log_info "[WORKAROUND] deleting suse.cap.psp.scf psp and clusterrole"
-    delete_manifest $yamldir/cap-psp.yaml
-    log_info "[WORKAROUND] deleting rbac roles for default serviceaccount in scf namespace"
-    delete_manifest $yamldir/cap-sa-rbac-with-psp.yaml
-  fi
+  log_info "[WORKAROUND] deleting suse.cap.psp.scf psp and clusterrole"
+  delete_manifest $yamldir/cap-psp.yaml
+  log_info "[WORKAROUND] deleting rbac roles for default serviceaccount in scf namespace"
+  delete_manifest $yamldir/cap-sa-rbac-with-psp.yaml
 
   log_info "deleting namespaces $names"
   delete_manifest $yamldir/cap-namespaces.yaml
