@@ -191,6 +191,10 @@ wait_until_ready() {
     current_available_num=$( kget $resource $NAME -n $namespace | awk "{print $"$ready_column"}" )
 
     if [[ $resource == "pods" ]]; then
+      # Exit if all containers in the pod have terminated in success
+      pod_status=$( kget $resource $NAME -n $namespace | awk '{print $3}' )
+      [[ $pod_status == "Completed" || $pod_status == "Succeeded" ]] && return
+
       # Parse READY column from pod n/n
       pod_ready_status=$current_available_num
       current_available_num=$(echo $pod_ready_status | awk -F'/' '{print $1}')
@@ -325,7 +329,6 @@ check_url() {
 ### CAP ###
 ###########
 deploy() {
-
   # Return $CAASP_VERSION and $CLUSTER_CIDR
   get_cluster_info
 
