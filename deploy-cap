@@ -10,6 +10,7 @@ ACTION=""
 MOUNT_PATH="/mnt"
 export HELM_HOME="$DIR/cap/.helm"
 ## Default file path in automation
+STORAGE_CLASS="persistent"
 ENVIRONMENT=${ENVIRONMENT:-$DIR/../../environment.json}
 ENVIRONMENT_SSH=${ENVIRONMENT_SSH:-$DIR/../../environment.ssh_config}
 KUBECONFIG=${KUBECONFIG:-$DIR/../../kubeconfig}
@@ -40,18 +41,19 @@ Usage:
 * General Options
 
     -ds|--deploy-server                           Deploy the server part when used with --test-volumetype (see example 2)
+    -sc|--storage-class                           'persistent' name of the storage class to use for persistent storage
     -e|--environment     <FNAME>                  'environment.json' file path (\$ENVIRONMENT)
     -k|--kubeconfig      <FNAME>                  'kubeconfig' file path (\$KUBECONFIG)
-    -sc|--ssh-config     <FNAME>                  'environment.ssh_config' file path (\$ENVIRONMENT_SSH)
+    -ssh|--ssh-config    <FNAME>                  'environment.ssh_config' file path (\$ENVIRONMENT_SSH)
 
   * Examples:
 
-  $0 --deploy-cap -k kubeconfig -sc environment.ssh_config -e environment.json
-  $0 --test-cap -k kubeconfig -sc environment.ssh_config -e environment.json
+  $0 --deploy-cap -k kubeconfig -sc persistent -ssh environment.ssh_config -e environment.json
+  $0 --test-cap -k kubeconfig -ssh environment.ssh_config -e environment.json
     # is the same as:
-  $0 --test-cap -ds -k kubeconfig -sc environment.ssh_config -e environment.json
+  $0 --test-cap -ds -k kubeconfig -ssh environment.ssh_config -e environment.json
 
-  $0 --destroy-cap -k kubeconfig -sc environment.ssh_config -e environment.json
+  $0 --destroy-cap -k kubeconfig -ssh environment.ssh_config -e environment.json
 
 # Requirements:
  - 'kubeconfig' file
@@ -111,8 +113,12 @@ while [[ $# > 0 ]] ; do
       ENVIRONMENT="$2"
       shift
       ;;
-    -sc|--ssh-config)
+    -ssh|--ssh-config)
       ENVIRONMENT_SSH="$2"
+      shift
+      ;;
+    -sc|--storage-class)
+      STORAGE_CLASS="$2"
       shift
       ;;
     -ds|--deploy-server)
@@ -326,9 +332,9 @@ deploy_cap() {
 
   # Create suse.cap.psp 
   # Apply suse:caasp:psp:privileged ClusterRole
-  log_info "[WORKAROUND] creating suse.cap.psp.scf psp and clusterrole"
+  log_info "creating suse.cap.psp.scf psp and clusterrole"
   apply_manifest $yamldir/cap-psp.yaml
-  log_info "[WORKAROUND] creating rbac roles for default serviceaccount in scf namespace"
+  log_info "creating rbac roles for default serviceaccount in scf namespace"
   apply_manifest $yamldir/cap-sa-rbac-with-psp.yaml
 
   # Get a wildcard domain, return $WILDCARD_DOMAIN
@@ -338,6 +344,9 @@ deploy_cap() {
   # Add secrets
   sed -i "s/UAA_ADMIN_CLIENT_SECRET:.*/UAA_ADMIN_CLIENT_SECRET: $password/" $yamldir/scf-config-values.yaml
   sed -i "s/CLUSTER_ADMIN_PASSWORD:.*/CLUSTER_ADMIN_PASSWORD: $password/" $yamldir/scf-config-values.yaml
+
+  # Add storage class
+  sed -i "s/persistent:.*/persistent: $STORAGE_CLASS/" $yamldir/scf-config-values.yaml
 
   worker_nodes=$(kget nodes | grep -v master | awk '{print $1}')
   #worker_nodes_fqdn=$(cat $ENVIRONMENT | jq '.minions[] | select(.role=="worker") | .fqdn')

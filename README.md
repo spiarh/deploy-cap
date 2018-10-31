@@ -5,7 +5,6 @@
 TODO: 
 
 ```
-Add option to set/configure the storage class
 Add option to configure the version
 Add option to configure the sizing of the deployment ???
 ```
@@ -53,18 +52,19 @@ Usage:
 * General Options
 
     -ds|--deploy-server                           Deploy the server part when used with --test-volumetype (see example 2)
+    -sc|--storage-class                           'persistent' name of the storage class to use for persistent storage
     -e|--environment     <FNAME>                  'environment.json' file path ($ENVIRONMENT)
     -k|--kubeconfig      <FNAME>                  'kubeconfig' file path ($KUBECONFIG)
-    -sc|--ssh-config     <FNAME>                  'environment.ssh_config' file path ($ENVIRONMENT_SSH)
+    -ssh|--ssh-config    <FNAME>                  'environment.ssh_config' file path ($ENVIRONMENT_SSH)
 
   * Examples:
 
-  ./deploy-cap --deploy-cap -k kubeconfig -sc environment.ssh_config -e environment.json
-  ./deploy-cap --test-cap -k kubeconfig -sc environment.ssh_config -e environment.json
+  ./deploy-cap --deploy-cap -k kubeconfig -sc persistent -ssh environment.ssh_config -e environment.json
+  ./deploy-cap --test-cap -k kubeconfig -ssh environment.ssh_config -e environment.json
     # is the same as:
-  ./deploy-cap --test-cap -ds -k kubeconfig -sc environment.ssh_config -e environment.json
+  ./deploy-cap --test-cap -ds -k kubeconfig -ssh environment.ssh_config -e environment.json
 
-  ./deploy-cap --destroy-cap -k kubeconfig -sc environment.ssh_config -e environment.json
+  ./deploy-cap --destroy-cap -k kubeconfig -ssh environment.ssh_config -e environment.json
 
 # Requirements:
  - 'kubeconfig' file
