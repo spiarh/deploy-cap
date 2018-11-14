@@ -421,7 +421,9 @@ deploy() {
   # Deploy UAA
   log_info "helm: deploying UAA"
   if ! helm list | grep uaa; then
-    helm install suse/uaa --name uaa --namespace uaa --values $FILES_DIR/scf-config-values.yaml ${UAA_CHART_VERSION:+--version $UAA_CHART_VERSION}
+    helm install suse/uaa --name uaa --namespace uaa \
+        --values $FILES_DIR/scf-config-values.yaml \
+        ${UAA_CHART_VERSION:+--version $UAA_CHART_VERSION}
   fi
   wait_until_all_ns_ready uaa
 
@@ -432,7 +434,10 @@ deploy() {
   # Deploy SCF
   log_info "helm: deploying SCF"
   if ! helm list | grep scf; then
-    helm install suse/cf --name scf --namespace scf --values $FILES_DIR/scf-config-values.yaml --set "secrets.UAA_CA_CERT=${CA_CERT}" ${SCF_CHART_VERSION:+--version $SCF_CHART_VERSION}
+    helm install suse/cf --name scf --namespace scf \
+        --values $FILES_DIR/scf-config-values.yaml \
+        --set "secrets.UAA_CA_CERT=${CA_CERT}" \
+        ${SCF_CHART_VERSION:+--version $SCF_CHART_VERSION}
   fi
   wait_until_all_ns_ready scf 3200
 
@@ -440,7 +445,10 @@ deploy() {
   # Deploy STRATOS
   log_info "helm: deploying STRATOS"
   if ! helm list | grep stratos; then
-    helm install suse/console --name stratos --namespace stratos --values $FILES_DIR/scf-config-values.yaml ${STRATOS_CHART_VERSION:+--version $STRATOS_CHART_VERSION}
+    helm install suse/console --name stratos --namespace stratos \
+        --values $FILES_DIR/scf-config-values.yaml \
+        --set "storageClass=$STORAGE_CLASS" \
+        ${STRATOS_CHART_VERSION:+--version $STRATOS_CHART_VERSION}
   fi
   wait_until_all_ns_ready stratos
 }
