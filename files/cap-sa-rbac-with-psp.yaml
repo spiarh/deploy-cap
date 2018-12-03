@@ -15,5 +15,11 @@ subjects:
   name: default
   namespace: scf
 - kind: ServiceAccount
+  name: default-privileged
+  namespace: scf
+- kind: ServiceAccount
+  name: node-reader
+  namespace: scf
+- kind: ServiceAccount
   name: default
   namespace: stratos
