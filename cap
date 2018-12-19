@@ -329,9 +329,6 @@ check_url() {
 ### CAP ###
 ###########
 deploy() {
-  # Return $CAASP_VERSION and $CLUSTER_CIDR
-  get_cluster_info
-
   log_action "DEPLOY CAP"
 
   # check if helm command exist
@@ -510,9 +507,6 @@ test_cap() {
 
 destroy() {
   names="uaa scf stratos"
-
-  # Return $CAASP_VERSION and $CLUSTER_CIDR
-  get_cluster_info
 
   log_action "DESTROY CAP"
 
