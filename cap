@@ -44,11 +44,11 @@ Usage:
 
 * General Options
 
-    -ds|--deploy-server                      Deploy the server part when used with --test-volumetype (see example 2)
+    --deploy-server                          Deploy the server part when used with --test-volumetype (see example 2)
     --uaa-chart-version                      UAA helm chart version, use latest if not specified
     --scf-chart-version                      SCF helm chart version, use latest if not specified
     --stratos-chart-version                  STRATOS helm chart version, use latest if not specified
-    -sc|--storage-class                      'persistent' name of the storage class to use for persistent storage
+    --storage-class                          'persistent' name of the storage class to use for persistent storage
     -e|--environment     <FNAME>             'environment.json' file path (\$ENVIRONMENT)
     -k|--kubeconfig      <FNAME>             'kubeconfig' file path (\$KUBECONFIG)
     -ssh|--ssh-config    <FNAME>             'environment.ssh_config' file path (\$ENVIRONMENT_SSH)
@@ -112,7 +112,7 @@ while [[ $# > 0 ]] ; do
     --test)
       ACTION="test"
       ;;
-    -sc|--storage-class)
+    --storage-class)
       STORAGE_CLASS="$2"
       shift
       ;;
@@ -140,7 +140,7 @@ while [[ $# > 0 ]] ; do
       ENVIRONMENT_SSH="$2"
       shift
       ;;
-    -ds|--deploy-server)
+    --deploy-server)
       DEPLOY=true
       ;;
     -h|--help)
