@@ -468,7 +468,6 @@ test_cap() {
   password=$(grep "CLUSTER_ADMIN_PASSWORD:" $FILES_DIR/scf-config-values.yaml | awk '{print $2}')
   space="qa_deploy"
 
-  go_app="test-app-go"
   php_app="test-app-php"
 
   # Login
@@ -483,7 +482,7 @@ test_cap() {
   cf target -o system -s $space
 
   # Deploy an application
-  for app in $php_app $go_app; do
+  for app in $php_app; do
     # Extract application
     tar --overwrite -zxf "$FILES_DIR/$app.tgz" -C "$FILES_DIR"
 
