@@ -158,7 +158,7 @@ wait_until_ready() {
   case $1 in
     ds|daemonsets)
       resource="daemonsets"
-      ready_column="4"
+      ready_column="2"
       ;;
     deploy|deployments)
       resource="deployments"
@@ -167,10 +167,6 @@ wait_until_ready() {
     po|pods)
       resource="pods"
       ready_column="2"
-      ;;
-    rs|replicasets)
-      resource="replicasets"
-      ready_column="4"
       ;;
     sts|statefulsets)
       resource="statefulsets"
@@ -212,7 +208,7 @@ wait_until_ready() {
 # Wait until all workload resources are ready in a namespace
 # It is a wrapper around wait_until_ready
 wait_until_all_ns_ready() {
-  resources="daemonsets deployments replicasets statefulsets pods"
+  resources="daemonsets deployments statefulsets pods"
   namespace=${1:-default}
   timeout=${2:-3200}
 
