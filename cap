@@ -491,11 +491,6 @@ destroy() {
 
   log_action "DESTROY CAP"
 
-  log_info "deleting suse.cap.psp.scf psp and clusterrole"
-  delete_manifest $FILES_DIR/cap-psp.yaml
-  log_info "deleting rbac roles for default serviceaccount in scf namespace"
-  delete_manifest $FILES_DIR/cap-sa-rbac-with-psp.yaml
-
   log_info "deleting namespaces $names"
   delete_manifest $FILES_DIR/cap-namespaces.yaml
   for name in $names; do
