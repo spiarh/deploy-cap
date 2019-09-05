@@ -1,4 +1,3 @@
 files/.helm
-environment.json
-environment.ssh_config
+files/password
 tests.log
