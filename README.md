@@ -11,9 +11,8 @@ resources (Daemonsets, Deployments, StatefulSets, Services, Jobs...).
 The steps are:
 
 1. Deploy CAP (~30-45min)
-2. Push a demo app in GO (https://github.com/cloudfoundry-samples/test-app)
-3. Push a demo app in PHP (https://github.com/cloudfoundry-samples/cf-ex-php-info)
-4. Destroy CAP
+2. Push a demo app in PHP (https://github.com/cloudfoundry-samples/cf-ex-php-info)
+3. Destroy CAP
 
 ## CLI Syntax
 
