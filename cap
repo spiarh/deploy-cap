@@ -15,8 +15,8 @@ STORAGE_CLASS="persistent"
 UAA_CHART_VERSION=""
 SCF_CHART_VERSION=""
 STRATOS_CHART_VERSION=""
-ENVIRONMENT=${ENVIRONMENT:-$DIR/../../environment.json}
-ENVIRONMENT_SSH=${ENVIRONMENT_SSH:-$DIR/../../environment.ssh_config}
+INTERNAL_IP=""
+FLOATING_IP=""
 KUBECONFIG=${KUBECONFIG:-$DIR/../../kubeconfig}
 DEPLOY=false
 
@@ -49,23 +49,22 @@ Usage:
     --scf-chart-version                      SCF helm chart version, use latest if not specified
     --stratos-chart-version                  STRATOS helm chart version, use latest if not specified
     --storage-class                          'persistent' name of the storage class to use for persistent storage
-    -e|--environment     <FNAME>             'environment.json' file path (\$ENVIRONMENT)
     -k|--kubeconfig      <FNAME>             'kubeconfig' file path (\$KUBECONFIG)
-    -ssh|--ssh-config    <FNAME>             'environment.ssh_config' file path (\$ENVIRONMENT_SSH)
+    --interface-ip       <IP>                Internal interface IP (e.g 172.16.0.1)
+    --floating-ip        <IP>                For OpenStack, use the floating IP for the UAA DOMAIN (e.g 10.86.0.2)
 
   * Examples:
 
-  $0 --deploy -k kubeconfig -sc persistent -ssh environment.ssh_config -e environment.json
-  $0 --test -k kubeconfig -ssh environment.ssh_config -e environment.json
+  $0 --deploy -k kubeconfig --internal-ip 10.84.72.211 --storage-class ses6-rbd-dev
+  $0 --deploy -k kubeconfig --internal-ip 172.16.0.1 --external-ip 10.86.0.2 --storage-class cinder
+  $0 --test -k kubeconfig
     # is the same as:
-  $0 --test -ds -k kubeconfig -ssh environment.ssh_config -e environment.json
+  $0 --test -ds -k kubeconfig
 
-  $0 --destroy -k kubeconfig -ssh environment.ssh_config -e environment.json
+  $0 --destroy -k kubeconfig
 
 # Requirements:
  - 'kubeconfig' file
- - 'environment.json' file
- - 'environment.ssh_config' file
  - 'kubectl' executable in path
  - 'helm' executable in path
  - 'jq' executable in path
@@ -112,6 +111,14 @@ while [[ $# > 0 ]] ; do
     --test)
       ACTION="test"
       ;;
+    --internal-ip)
+      INTERNAL_IP="$2"
+      shift
+      ;;
+    --floating-ip)
+      FLOATING_IP="$2"
+      shift
+      ;;
     --storage-class)
       STORAGE_CLASS="$2"
       shift
@@ -130,14 +137,6 @@ while [[ $# > 0 ]] ; do
       ;;
     -k|--kubeconfig)
       KUBECONFIG="$2"
-      shift
-      ;;
-    -e|--environment)
-      ENVIRONMENT="$2"
-      shift
-      ;;
-    -ssh|--ssh-config)
-      ENVIRONMENT_SSH="$2"
       shift
       ;;
     --deploy-server)
@@ -163,7 +162,7 @@ wait_until_ready() {
       ;;
     deploy|deployments)
       resource="deployments"
-      ready_column="5"
+      ready_column="2"
       ;;
     po|pods)
       resource="pods"
@@ -175,7 +174,7 @@ wait_until_ready() {
       ;;
     sts|statefulsets)
       resource="statefulsets"
-      ready_column="3"
+      ready_column="2"
       ;;
   esac
 
@@ -282,16 +281,6 @@ kdelete() {
   kubectl --kubeconfig="$KUBECONFIG" delete --force $@
 }
 
-get_cluster_info() {
-  # Get CaaSP version
-  log_info "getting caasp version from master-1"
-  CAASP_VERSION=$(ssh -F $ENVIRONMENT_SSH master-1 cat /etc/os-release | grep -E "^VERSION=" | sed 's/[a-zA-Z"=]*//g; s/\..*$//')
-  
-  # Get Kubernetes Cluster CIDR
-  log_info "getting cluster cidr from master-1"
-  CLUSTER_CIDR=$(ssh -F $ENVIRONMENT_SSH master-1 cat /etc/kubernetes/controller-manager |grep cluster-cidr| awk -F'=' '{ print $2 }' | sed 's/ \\//')
-}
-
 # Find a working wildcard domain service
 get_wildcard_domain() {
   # Test the wildcard on localhost
@@ -325,22 +314,11 @@ check_url() {
   fi
 }
 
-###########
-### CAP ###
-###########
-deploy() {
-  log_action "DEPLOY CAP"
-
+configure_helm() {
   # check if helm command exist
   if ! hash helm > /dev/null 2>&1; then
     log_error "helm does not exist" && abort
   fi
-
-  # Generate a password
-  if [[ ! -s "$FILES_DIR/password" ]]; then
-    uuidgen > "$FILES_DIR/password"
-  fi
-  password=$(cat $FILES_DIR/password)
 
   # Configure helm
   log_info "initializing helm in $HELM_HOME"
@@ -354,24 +332,47 @@ deploy() {
     helm repo add suse https://kubernetes-charts.suse.com/
   fi
 
+  log_info "update repository"
+  helm repo update
+
   log_info "repository list:"
   helm repo list
 
   log_info "available suse charts:"
   helm search suse
+}
 
-  log_info "creating uaa,scf and stratos namespaces"
-  apply_manifest $FILES_DIR/cap-namespaces.yaml
+###########
+### CAP ###
+###########
+deploy() {
+  log_action "DEPLOY CAP"
 
-  # Create suse.cap.psp 
-  # Apply suse:caasp:psp:privileged ClusterRole
-  log_info "creating suse.cap.psp.scf psp and clusterrole"
-  apply_manifest $FILES_DIR/cap-psp.yaml
-  log_info "creating rbac roles for default serviceaccount in scf namespace"
-  apply_manifest $FILES_DIR/cap-sa-rbac-with-psp.yaml
+  # Configure helm
+  configure_helm
+
+  # Generate a password
+  if [[ ! -s "$FILES_DIR/password" ]]; then
+    uuidgen > "$FILES_DIR/password"
+  fi
+  password=$(cat $FILES_DIR/password)
+
+  if [[ -z "$INTERNAL_IP" ]]; then
+    log_error "No Internal IP provided" && abort
+  fi
 
   # Get a wildcard domain, return $WILDCARD_DOMAIN
   get_wildcard_domain
+
+  # For OpenStack, we have to use the floating IP (external_ip) that
+  # points to the worker node
+  if [[ ! -z "$FLOATING_IP" ]]; then
+    domain="$FLOATING_IP.$WILDCARD_DOMAIN"
+  else
+    domain="$INTERNAL_IP.$WILDCARD_DOMAIN"
+  fi
+
+  node=$(kubectl get nodes  -o json | jq ".items[] | {name: .metadata.name, ip: .status.addresses[] | select(.type==\"InternalIP\") | select(.address==\"$INTERNAL_IP\")}" | jq -r '.name')
 
   # Configure scf-config-values.yaml
   # Add secrets
@@ -381,39 +382,20 @@ deploy() {
   # Add storage class
   sed -i "s/persistent:.*/persistent: $STORAGE_CLASS/" $FILES_DIR/scf-config-values.yaml
 
-  worker_nodes=$(kget nodes | grep -v master | awk '{print $1}')
-  #worker_nodes_fqdn=$(cat $ENVIRONMENT | jq '.minions[] | select(.role=="worker") | .fqdn')
-  for node in $worker_nodes; do
-    if kget nodes $node | grep "Ready\s"; then
-      worker_private_ip=$(kget nodes $node -o jsonpath='{.status.addresses[?(@.type=="InternalIP")].address}')
+  # Replace values in config file
+  sed -i "s/DOMAIN:.*/DOMAIN: $domain/" $FILES_DIR/scf-config-values.yaml
+  sed -i "s/UAA_HOST:.*/UAA_HOST: uaa.$domain/" $FILES_DIR/scf-config-values.yaml
+  sed -i "s/external_ips:.*/external_ips: \[\"$INTERNAL_IP\"\]/" $FILES_DIR/scf-config-values.yaml
 
-      worker_public_ip=$(cat $ENVIRONMENT | jq -r ".minions[] | select(.addresses.privateIpv4 == \"$worker_private_ip\") | .addresses.publicIpv4")
+  log_info "worker node: $node"
+  log_info "worker internal IP: $INTERNAL_IP"
+  log_info "worker floating IP (OpenStack only): $FLOATING_IP"
 
-      # For OpenStack, we have to use the floating IP that
-      # points to the worker node
-      if [[ $worker_public_ip != $worker_private_ip ]]; then
-        domain=$worker_public_ip.$WILDCARD_DOMAIN
-      else
-        domain=$worker_private_ip.$WILDCARD_DOMAIN
-      fi
+  log_info "scf-config-values.yaml content:"
+  cat $FILES_DIR/scf-config-values.yaml
 
-      # Internal IP of the worker node
-      external_ip=$worker_private_ip
-
-      # Replace values in config file
-      sed -i "s/DOMAIN:.*/DOMAIN: $domain/" $FILES_DIR/scf-config-values.yaml
-      sed -i "s/UAA_HOST:.*/UAA_HOST: uaa.$domain/" $FILES_DIR/scf-config-values.yaml
-      sed -i "s/external_ips:.*/external_ips: \[\"$external_ip\"\]/" $FILES_DIR/scf-config-values.yaml
-
-      log_info "worker node: $node"
-      log_info "worker private IP: $worker_private_ip"
-      log_info "worker public IP: $worker_public_ip"
-
-      log_info "scf-config-values.yaml content:"
-      cat $FILES_DIR/scf-config-values.yaml
-      break
-    fi
-  done
+  log_info "creating uaa,scf and stratos namespaces"
+  apply_manifest $FILES_DIR/cap-namespaces.yaml
 
   # Deploy UAA
   log_info "helm: deploying UAA"
