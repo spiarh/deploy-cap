@@ -36,29 +36,29 @@ Usage:
 
 * General Options
 
-    -ds|--deploy-server                      Deploy the server part when used with --test-volumetype (see example 2)
+    --deploy-server                          Deploy the server part when used with --test-volumetype (see example 2)
     --uaa-chart-version                      UAA helm chart version, use latest if not specified
     --scf-chart-version                      SCF helm chart version, use latest if not specified
     --stratos-chart-version                  STRATOS helm chart version, use latest if not specified
-    -sc|--storage-class                      'persistent' name of the storage class to use for persistent storage
-    -e|--environment     <FNAME>             'environment.json' file path ($ENVIRONMENT)
+    --storage-class                          'persistent' name of the storage class to use for persistent storage
     -k|--kubeconfig      <FNAME>             'kubeconfig' file path ($KUBECONFIG)
-    -ssh|--ssh-config    <FNAME>             'environment.ssh_config' file path ($ENVIRONMENT_SSH)
+    --interface-ip       <IP>                Internal interface IP (e.g 172.16.0.1)
+    --floating-ip        <IP>                For OpenStack, use the floating IP for the UAA DOMAIN (e.g 10.86.0.2)
 
   * Examples:
 
-  ./cap --deploy -k kubeconfig -sc persistent -ssh environment.ssh_config -e environment.json
-  ./cap --test -k kubeconfig -ssh environment.ssh_config -e environment.json
+  ./cap --deploy -k kubeconfig --internal-ip 10.84.72.211 --storage-class ses6-rbd-dev
+  ./cap --deploy -k kubeconfig --internal-ip 172.16.0.1 --external-ip 10.86.0.2 --storage-class cinder
+  ./cap --test -k kubeconfig
     # is the same as:
-  ./cap --test -ds -k kubeconfig -ssh environment.ssh_config -e environment.json
+  ./cap --test -ds -k kubeconfig
 
-  ./cap --destroy -k kubeconfig -ssh environment.ssh_config -e environment.json
+  ./cap --destroy -k kubeconfig
 
 # Requirements:
  - 'kubeconfig' file
- - 'environment.json' file
- - 'environment.ssh_config' file
  - 'kubectl' executable in path
  - 'helm' executable in path
  - 'jq' executable in path
+ - 'cf' executable in path
 ```
