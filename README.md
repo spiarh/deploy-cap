@@ -41,7 +41,7 @@ Usage:
     --stratos-chart-version                  STRATOS helm chart version, use latest if not specified
     --storage-class                          'persistent' name of the storage class to use for persistent storage
     -k|--kubeconfig      <FNAME>             'kubeconfig' file path ($KUBECONFIG)
-    --interface-ip       <IP>                Internal interface IP (e.g 172.16.0.1)
+    --internal-ip        <IP>                Internal interface IP (e.g 172.16.0.1)
     --floating-ip        <IP>                For OpenStack, use the floating IP for the UAA DOMAIN (e.g 10.86.0.2)
 
   * Examples:
