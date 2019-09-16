@@ -1,4 +1,5 @@
 files/.helm
 files/password
+files/scf-config-values.yaml
 files/test-app-php/
 tests.log
