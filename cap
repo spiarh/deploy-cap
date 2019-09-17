@@ -4,6 +4,7 @@ set -euo pipefail
 
 DIR="$( cd "$( dirname "$0" )" && pwd )"
 FILES_DIR="$DIR/files"
+cp -n $FILES_DIR/scf-config-values-base.yaml $FILES_DIR/scf-config-values.yaml
 
 # Options
 ACTION=""
